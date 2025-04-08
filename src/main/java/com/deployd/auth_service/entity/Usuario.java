@@ -13,6 +13,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +27,14 @@ import java.util.Set;
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
+    
+    @Column(name = "intentos_fallidos")
+    private int intentosFallidos = 0;
+
+    @Column(name = "bloqueado_hasta")
+    private LocalDateTime bloqueadoHasta;
+
     @NotBlank
     @Size(max = 50)
   //  @Column(unique = true)
@@ -35,7 +43,7 @@ public class Usuario {
     @Size(min = 4, max = 255)
     private String password;
 
-    private String tokenpassword;
+    private String tokenPassword;
 
     
     @Enumerated(EnumType.STRING)
@@ -84,11 +92,11 @@ public class Usuario {
 	}
 
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -109,11 +117,11 @@ public class Usuario {
     }
 
     public String getTokenpassword() {
-        return tokenpassword;
+        return tokenPassword;
     }
 
     public void setTokenpassword(String tokenpassword) {
-        this.tokenpassword = tokenpassword;
+        this.tokenPassword = tokenpassword;
     }
 
     public Estado getEstado() {
@@ -171,4 +179,19 @@ public class Usuario {
     public void setLocales(Set<Local> locales) {
         this.locales = locales;
     }
+
+
+	public String getTokenPassword() {
+		return tokenPassword;
+	}
+
+
+	public void setTokenPassword(String tokenPassword) {
+		this.tokenPassword = tokenPassword;
+	}
+    
+    
+    
+    
+    
 }

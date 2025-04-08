@@ -49,7 +49,7 @@ public class UsuarioService {
     public List<Usuario> listarTodos() {
         return usuarioRepository.findAll();
     }
-
+/*
     public Usuario save(Usuario usuario) throws Exception {
         // Verificar si el usuario ya existe
         if (usuarioRepository.existsByUserName(usuario.getUserName())) {
@@ -58,7 +58,22 @@ public class UsuarioService {
         // Si no existe, se guarda el nuevo usuario y se retorna
         return usuarioRepository.save(usuario);
     }
+*/
 
+    public Usuario save(Usuario usuario) throws Exception {
+        if (usuario.getId() == null || usuario.getId() == 0) {
+            // Si el id es null o 0, significa que es un usuario nuevo
+            if (usuarioRepository.existsByUserName(usuario.getUserName())) {
+                // Si el correo ya está registrado y el usuario es nuevo, lanzamos la excepción
+                throw new Exception("El correo electrónico ya está registrado");
+            }
+        }
+        // Si no existe o si es un usuario ya existente, se guarda o actualiza
+        return usuarioRepository.save(usuario);
+    }
+
+
+    
     public boolean existsById(Integer id) {
         return usuarioRepository.existsById(id); // Ya implementado por JpaRepository
     }
@@ -221,6 +236,10 @@ public class UsuarioService {
 
         // Guardar cambios
         return usuarioRepository.save(usuarioExistente);
+    }
+
+    public Optional<Usuario> getByTokenPassword(String tokenpassword){
+        return usuarioRepository.findByTokenPassword(tokenpassword);
     }
 
 }

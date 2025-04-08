@@ -35,6 +35,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -270,7 +272,7 @@ public class AuthController {
         return new ResponseEntity<>(new Mensaje("usuario guardado"), HttpStatus.CREATED);
     }
 */
-
+/*
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginUsuario loginUsuario, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -302,6 +304,65 @@ public class AuthController {
 
         return new ResponseEntity<>(jwtDto, HttpStatus.OK);
     }
+*/
+    
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@Valid @RequestBody LoginUsuario loginUsuario, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return new ResponseEntity<>(new Mensaje("Campos mal puestos"), HttpStatus.BAD_REQUEST);
+        }
+
+        Optional<Usuario> usuarioOptional = usuarioRepository.findByUserName(loginUsuario.getNombreUsuario());
+        if (!usuarioOptional.isPresent()) {
+            return new ResponseEntity<>(new Mensaje("Correo incorrecto"), HttpStatus.BAD_REQUEST);
+        }
+
+        Usuario usuario = usuarioOptional.get();
+
+        // Verificar si está bloqueado
+        if (usuario.getBloqueadoHasta() != null && usuario.getBloqueadoHasta().isAfter(LocalDateTime.now())) {
+            // Calcular los minutos restantes hasta que el bloqueo termine
+            Duration duracionRestante = Duration.between(LocalDateTime.now(), usuario.getBloqueadoHasta());
+            long minutos = duracionRestante.toMinutes();  // Calcular minutos restantes
+
+            // Si la duración es menos de 1 minuto, se muestra 1 minuto de espera
+            if (minutos <= 0) {
+                minutos = 1;  // Aseguramos que no sea 0
+            }
+
+            return new ResponseEntity<>(new Mensaje("Cuenta bloqueada. Intenta en " + minutos + " minutos"), HttpStatus.FORBIDDEN);
+        }
+
+        // Verificar contraseña
+        if (!passwordEncoder.matches(loginUsuario.getPassword(), usuario.getPassword())) {
+            usuario.setIntentosFallidos(usuario.getIntentosFallidos() + 1);
+
+            if (usuario.getIntentosFallidos() >= 3) {
+                // Bloquear la cuenta por 1 minuto (para pruebas)
+                usuario.setBloqueadoHasta(LocalDateTime.now().plusMinutes(1));  // Bloqueo de 1 minuto
+                usuario.setIntentosFallidos(0);  // Reinicia los intentos fallidos después de bloquear
+            }
+
+            usuarioRepository.save(usuario);
+            return new ResponseEntity<>(new Mensaje("Contraseña incorrecta"), HttpStatus.BAD_REQUEST);
+        }
+
+        // Si llegó aquí, es porque el login fue exitoso
+        usuario.setIntentosFallidos(0);
+        usuario.setBloqueadoHasta(null);
+        usuarioRepository.save(usuario);
+
+        Authentication authentication = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(loginUsuario.getNombreUsuario(), loginUsuario.getPassword())
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtProvider.generateToken(authentication);
+        JwtDto jwtDto = new JwtDto(jwt);
+
+        return new ResponseEntity<>(jwtDto, HttpStatus.OK);
+    }
+
 
 
     @PostMapping("/refresh")

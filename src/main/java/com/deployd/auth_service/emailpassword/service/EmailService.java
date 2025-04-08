@@ -30,7 +30,7 @@ public class EmailService {
 
 
 
-    public void sendEmail(EmailValuesDTO dto) {
+    /*public void sendEmail(EmailValuesDTO dto) {
         MimeMessage message = javaMailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
@@ -52,5 +52,37 @@ public class EmailService {
         }catch (MessagingException e){
             e.printStackTrace();
         }
+    }*/
+    
+
+    public void sendEmail(EmailValuesDTO dto) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            Context context = new Context();
+            Map<String, Object> model = new HashMap<>();
+            model.put("userName", dto.getUserName());
+            model.put("url", urlFront + dto.getTokenPassword());
+            context.setVariables(model);
+
+            // HTML
+            String htmlText = templateEngine.process("email-template", context);
+            helper.setText(htmlText, true);
+
+            // Versión texto plano (recomendado)
+            String plainText = "Hola " + dto.getUserName() + ", usa el siguiente enlace para continuar: " +
+                    urlFront + dto.getTokenPassword();
+            helper.setText(plainText, htmlText);
+
+            helper.setFrom(dto.getMailFrom());
+            helper.setTo(dto.getMailTo());
+            helper.setSubject(dto.getSubject());
+
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
     }
+
 }
